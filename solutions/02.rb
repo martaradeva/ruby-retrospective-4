@@ -68,7 +68,7 @@ class SignFilter < Filter
     @data_type = data_type
   end
 
-  def accepts?(sign)
+  def accepts?(number)
     criterion = -> {}
     case @data_type
       when :positive     then criterion = -> (n) { n >  0 }
@@ -76,6 +76,6 @@ class SignFilter < Filter
       when :negative     then criterion = -> (n) { n <  0 }
       when :non_negative then criterion = -> (n) { n >= 0 }
     end
-    Filter.new(&criterion).accepts?(sign)
+    Filter.new(&criterion).accepts?(number)
   end
 end
