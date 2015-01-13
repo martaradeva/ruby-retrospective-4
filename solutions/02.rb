@@ -27,6 +27,16 @@ include Enumerable
     self.each {|current| filtered_set << current if filter.accepts?(current)}
     filtered_set
   end
+end
+
+class Filter
+  def initialize(&block)
+    @filter = block
+  end
+
+  def accepts?(number)
+    return true if @filter.call(number)
+  end
 
   # def &(argument)
   #   self and argument
@@ -37,42 +47,35 @@ include Enumerable
   # end
 end
 
-class Filter
-  def initialize (&block)
-    @filter = block
-  end
-
-  def accepts?(number)
-        return true if @filter.call(number)
-  end
-end
-
-class TypeFilter
-  def initialize (data_type)
+class TypeFilter < Filter
+  def initialize(data_type)
     @data_type = data_type
   end
 
   def accepts?(number)
+    criterion = -> {}
     case @data_type
-      when :integer then Filter.new {|n| n.is_a? Integer}.accepts?(number)
-      when :complex then Filter.new {|n| n.is_a? Complex}.accepts?(number)
-      when :real then Filter
-        .new {|n| n.is_a? Float or n.is_a? Rational}.accepts?(number)
+      when :integer then criterion = -> (n) { n.is_a? Integer }
+      when :complex then criterion = -> (n) { n.is_a? Complex }
+      when :real    then criterion = -> (n) { n.is_a? Float or n.is_a? Rational }
     end
+    Filter.new(&criterion).accepts?(number)
   end
 end
 
-class SignFilter
-  def initialize (data_type)
+class SignFilter < Filter
+  def initialize(data_type)
     @data_type = data_type
   end
 
   def accepts?(sign)
+    criterion = -> {}
     case @data_type
-      when :positive     then Filter.new {|n| n >  0}.accepts?(sign)
-      when :non_positive then Filter.new {|n| n <= 0}.accepts?(sign)
-      when :negative     then Filter.new {|n| n <  0}.accepts?(sign)
-      when :non_negative then Filter.new {|n| n >= 0}.accepts?(sign)
+      when :positive     then criterion = -> (n) { n >  0 }
+      when :non_positive then criterion = -> (n) { n <= 0 }
+      when :negative     then criterion = -> (n) { n <  0 }
+      when :non_negative then criterion = -> (n) { n >= 0 }
     end
+    Filter.new(&criterion).accepts?(sign)
   end
 end
