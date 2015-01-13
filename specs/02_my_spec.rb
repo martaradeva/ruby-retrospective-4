@@ -1,4 +1,3 @@
-#02_my_spec.rb
 describe NumberSet do
 
   context 'creation' do
@@ -55,48 +54,40 @@ describe NumberSet do
       expect(set.size).to eq 2
     end
 
-    # it 'can redefine [] method' do
-    #   expect(NumberSet.new['a']).to eq 'a'
-    # end
-
-    #  it 'can access block in [] method' do
-    #   set = NumberSet.new << 1 << 2 << 3
-    #   expect(set[ & -> (n) {n.even?} ].to_a).to eq [2]
-    #   # expect(set[{|n| n.even? } ].to_a).to eq [2]
-    # end
-
-    # it '[] method can filter when given a block' do
-    #   set = NumberSet.new << 1 << 2 << 3
-    #   # filth = Filter.new {|number| number.odd?}
-    #   expect(set[ { |number| number.odd?} ].to_a).to eq [1,3]
-    # end
-
-    # it 'Filter class outputs block correctly' do
-    #   filth = Filter.new {}
-
-    # it 'Filter.new works' do
-    #   expect(Filter.new(2){ |n| n.even?}).to eq true
-    # end
-
-    # it 'Filter.new passes block to @filter' do
-    #   expect(Filter.new {|n| n.odd?}).to eq true
-    # end
-
-    it 'has valid Filter class methods' do
-      expect(Filter.new{ |n| n.odd? }.accepts?(3)).to eq true
+    it 'has a valid empty? method' do
+      set = NumberSet.new << 1 << 2
+      expect(set.empty?).to eq false
     end
+  end
 
-    it '[] can filter via Filter class instance' do
+  context 'simple filter' do
+#martas test
+    it 'can create a working Filter class instance' do
+      expect(Filter.new { |n| n.even?}.accepts?(2)).to eq true
+    end
+#fmi test
+    # it 'has valid Filter class methods' do
+    #   expect(Filter.new{ |n| n.odd? }.accepts?(3)).to eq true
+    # end
+#martas test
+    it '[] method can filter' do
       set = NumberSet.new << 1 << 2 << 3
-      filtered_set = set[Filter.new{ |n| n.odd? }]
-      expect(filtered_set.to_a).to eq [1,3]
+      filth = Filter.new {|number| number.odd?}
+      expect(set[filth].to_a).to eq [1,3]
     end
+#fmi test
+    # it '[] can filter via Filter class instance' do
+    #   set = NumberSet.new << 1 << 2 << 3
+    #   filtered_set = set[Filter.new{ |n| n.odd? }]
+    #   expect(filtered_set.to_a).to eq [1,3]
+    # end
+  end
 
+  context 'Special Filters' do
     it 'can filter via Typefilter' do
       set = NumberSet.new << 1 << 2.5+3i << 3 << Rational(3,2)
       filtered_set = set[TypeFilter.new(:complex)]
       real_set = set[TypeFilter.new(:real)]
-      # expect(filtered_set.to_a).to eq [2.5+3i]
       expect(real_set.to_a).to eq [Rational(3,2)]
     end
 
@@ -105,17 +96,20 @@ describe NumberSet do
       filtered_set = set[SignFilter.new(:positive)]
       expect(filtered_set.to_a).to eq [1,2]
     end
+  end
 
-    it 'can chain filter methods' do
+  context 'Chaining different filters' do
+    it 'can chain filter methods - and' do
       set = NumberSet.new << 0 << 1 << 2 << 3
       filtered_set = set[Filter.new{|n| n.even?} & SignFilter.new(:positive)]
       expect(filtered_set.to_a).to eq [2]
     end
 
-    # it 'can filter via TypeFilter' do
-    #   set = NumberSet.new << 1 << Rational(2,3) << 3
-    #   expect(set[TypeFilter.new(:integer)].to_a).to eq [1,3]
-    # end
+    it 'can chain filter methods - or' do
+      set = NumberSet.new << 0 << -1 << -2 << 3
+      filtered_set = set[Filter.new{|n| n.even?} | SignFilter.new(:negative)]
+      expect(filtered_set.to_a).to eq [0, -1, -2]
+    end
 
     it 'can combine two filters with "and" rule' do
       numbers = NumberSet.new
