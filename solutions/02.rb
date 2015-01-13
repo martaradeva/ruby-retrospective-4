@@ -38,13 +38,13 @@ class Filter
     return true if @filter.call(number)
   end
 
-  # def &(argument)
-  #   self and argument
-  # end
+  def &(other)
+    Filter.new { |number| self.accepts?(number) and other.accepts?(number) }
+  end
 
-  # def |(argument)
-  #   self or argument
-  # end
+  def |(other)
+    Filter.new { |number| self.accepts?(number) or other.accepts?(number) }
+  end
 end
 
 class TypeFilter < Filter
