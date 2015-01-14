@@ -1,30 +1,46 @@
-  class String
-    def next_by_length! (number)
-      self.slice! (0..number.to_i-1)
+module RBFS
+
+  class Parser
+    attr_accessor :string_to_parse
+
+    def initialize
     end
 
-    def next_by_column!
-      chunk = self.split(":", 2)[0]
-      self.slice! (0 .. chunk.length)
-      chunk
+    def self.parse_directory(string)
+      @string_to_parse = string
+      parsed_directory = RBFS::Directory.new
+      parsed_directory.files.merge! parse_all_objects(RBFS::File)
+      parsed_directory.directories.merge! parse_all_objects(RBFS::Directory)
+      parsed_directory
     end
 
-    def read_next_file!
-      file_name = self.next_by_column!
-      file_length = self.next_by_column!
-      file_serialized = self.next_by_length!(file_length)
-      [file_name, RBFS::File.parse(file_serialized)]
+    private
+
+    def self.parse_all_objects(klass)#klass is RBFS::File or RBFS::Directory
+      parsed_objects = {}
+      number_of_objects = next!.to_i
+      number_of_objects.times do
+        parsed_objects.merge! parse_single_object(klass)
+      end
+      parsed_objects
     end
 
-    def read_next_dir!
-      dir_name = self.next_by_column!
-      dir_length = self.next_by_column!
-      dir_serialized = self.next_by_length!(dir_length)
-      [dir_name, RBFS::Directory.parse(dir_serialized)]
+    def self.parse_single_object(klass)
+      name = next!
+      length = next!
+      serialized = next!(length)
+      parsed = klass.parse(serialized)
+      {name => parsed}
+    end
+
+    def self.next! (*piece_length)
+      if piece_length.length > 0 
+        then @string_to_parse.slice! (0..piece_length[0].to_i-1)
+        else chunk, @string_to_parse = @string_to_parse.split(":", 2)
+        chunk
+      end
     end
   end
-
-module RBFS
 
   class File
     attr_accessor :data
@@ -72,17 +88,13 @@ module RBFS
   end
 
   class Directory
-    attr_reader :directories
-    attr_reader :files
+    attr_accessor :directories
+    attr_accessor :files
 
     def initialize
       @directories = {}
       @files = {}
     end
-
-    # def inspect
-    #   "files: #{@files.length}, directories: #{@directories.length}"
-    # end
 
     def add_file(name, file)
       if !name.include? ":" then @files.merge!({ name => file }) end
@@ -115,20 +127,8 @@ module RBFS
     end
 
     def self.parse(string)
-      parsed_directory = Directory.new
-      number_of_files = string.next_by_column!
-      number_of_files.to_i.times do
-        file_hash = string.read_next_file!
-        parsed_directory.add_file(file_hash[0], file_hash[1])
-      end
-      number_of_directories = string.next_by_column!
-      number_of_directories.to_i.times do
-        directory_hash = string.read_next_dir!
-        parsed_directory.add_directory(directory_hash[0], directory_hash[1])
-      end
-      parsed_directory
+      RBFS::Parser.parse_directory(string)
     end
   end
-
+  
 end
-

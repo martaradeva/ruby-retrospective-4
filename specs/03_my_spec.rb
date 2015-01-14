@@ -59,8 +59,8 @@ describe RBFS do
           directory.add_file 'README',  RBFS::File.new('Hello world!')
           directory.add_file 'spec.rb', RBFS::File.new('describe RBFS')
           directory.add_directory 'rbfs'
-          puts directory.serialize
-          puts directory['rbfs'].inspect
+          # puts directory.serialize
+          # puts directory['rbfs'].inspect
           #expect(directory.serialize).to eq simple_serialized_string
           expect(1).to eq 1
         end
