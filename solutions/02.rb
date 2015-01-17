@@ -57,7 +57,7 @@ class TypeFilter < Filter
     case @data_type
       when :integer then criterion = -> (n) { n.is_a? Integer }
       when :complex then criterion = -> (n) { n.is_a? Complex }
-      when :real    then criterion = -> (n) { n.is_a? Float or n.is_a? Rational }
+      when :real    then criterion = -> (n) { n.is_a? Float or n.is_a? Rational}
     end
     Filter.new(&criterion).accepts?(number)
   end

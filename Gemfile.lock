@@ -3,6 +3,7 @@ GEM
   specs:
     diff-lcs (1.2.5)
     ffi (1.9.6)
+    ffi (1.9.6-x86-mingw32)
     ffi-aspell (1.0.2)
       ffi
     rake (10.4.2)
@@ -26,6 +27,7 @@ GEM
 
 PLATFORMS
   ruby
+  x86-mingw32
 
 DEPENDENCIES
   rake
