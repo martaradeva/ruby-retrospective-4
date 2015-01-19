@@ -4,39 +4,47 @@ module RBFS
     attr_accessor :string_to_parse
 
     def initialize
+      @string_to_parse = ""
+      @parsed_objects = {}
     end
 
     def self.parse_directory(string)
-      @string_to_parse = string
+      #@string_to_parse = string
+      #puts @string_to_parse
       parsed_directory = RBFS::Directory.new
-      parsed_directory.files.merge! parse_all_objects(RBFS::File)
-      parsed_directory.directories.merge! parse_all_objects(RBFS::Directory)
+      parsed_directory.files.merge! parse_all_objects(RBFS::File, string)
+  parsed_directory.directories.merge! parse_all_objects(RBFS::Directory, string)
       parsed_directory
     end
 
     private
 
-    def self.parse_all_objects(class_name)
+    def self.parse_all_objects(class_name, string)
+      # puts @string_to_parse
       parsed_objects = {}
-      number_of_objects = next!.to_i
-      number_of_objects.times do
-        parsed_objects.merge! parse_single_object(class_name)
-      end
+      number_of_objects = next!(string).to_i
+      while number_of_objects > parsed_objects.length do
+        puts string
+        parsed_objects.merge! parse_single_object(class_name, string) end
       parsed_objects
     end
 
-    def self.parse_single_object(class_name)
-      name = next!
-      length = next!
-      serialized = next!(length)
+    def self.parse_single_object(class_name, string)
+      #puts "to parse= #{string}"
+      name = next!(string)
+      length = next!(string)
+      serialized = next!(string, length)
+      #puts "name= #{name}, length= #{length} s= #{serialized}"
       parsed = class_name.parse(serialized)
-      {name => parsed}
+      if string.length > 0 then parse_single_object(class_name, string) end
+      @parsed_objects.merge! {name => parsed}
     end
 
-    def self.next! (*piece_length)
+    def self.next! (string, *piece_length)
+      return "" if string.length == 0
       if piece_length.length > 0
-        then @string_to_parse.slice! (0..piece_length[0].to_i-1)
-        else chunk, @string_to_parse = @string_to_parse.split(":", 2)
+        then string.slice! (0..piece_length[0].to_i-1)
+        else chunk, string = string.split(":", 2)
         chunk
       end
     end
@@ -116,15 +124,18 @@ module RBFS
 
     def serialize
       result = []
-      result << @files.length.to_s + ":"
-      @files.each do |name, file|
-        result << [name, file.serialize.length.to_s, file.serialize].join(":")
-      end
-      result << @directories.length.to_s + ":"
-      @directories.each do |name, directory|
-        result << name << ":" << directory.serialize
-      end
+      result << serialize_similar(@files)
+      result << serialize_similar(@directories)
       result.join ""
+    end
+
+    def serialize_similar(objects_array)
+      text = []
+      text << objects_array.length.to_s + ":"
+      objects_array.each do |name, object|
+        text << [name, object.serialize.length.to_s, object.serialize].join(":")
+      end
+      text
     end
 
     def self.parse(string)
