@@ -110,8 +110,9 @@ module RBFS
     end
 
     def serialize
-      files = serialize_similar(@files)
+      files =       serialize_similar(@files)
       directories = serialize_similar(@directories)
+
       "#{files}#{directories}"
     end
 
@@ -127,13 +128,13 @@ module RBFS
     private
 
     def serialize_similar(objects_array)
-      text = ""
-      text << "#{objects_array.length.to_s}:"
+      output = ""
+      output << "#{objects_array.length.to_s}:"
       objects_array.each do |name, object|
         serialized = object.serialize
-        text << "#{name}:#{serialized.length.to_s}:#{serialized}"
+        output << "#{name}:#{serialized.length.to_s}:#{serialized}"
       end
-      text
+      output
     end
   end
 end
