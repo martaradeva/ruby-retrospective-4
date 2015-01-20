@@ -7,6 +7,15 @@ module RBFS
       @string_to_parse = string
     end
 
+    def parse_to_hash(class_name)
+      result = {}
+      block = -> (name, entity) {result[name] = class_name.parse(entity)}
+      parse_all &block
+      result
+    end
+
+    private
+
     def parse_all
       size = next_parameter!.to_i
       size.times do
@@ -15,8 +24,6 @@ module RBFS
         yield name, serialized
       end
     end
-
-    private
 
     def next_parameter!
         chunk, string = @string_to_parse.split(":", 2)
@@ -111,12 +118,10 @@ module RBFS
 
     def self.parse(string)
       parser = Parser.new(string)
-      files = {}
-      directories = {}
-      parser.parse_all {|name, entity| files[name] = File.parse(entity) }
-      parser.parse_all do |name, entity|
-        directories[name] = Directory.parse(entity)
-      end
+
+      files =       parser.parse_to_hash (File)
+      directories = parser.parse_to_hash (Directory)
+
       Directory.new(files, directories)
     end
 
