@@ -3,50 +3,31 @@ module RBFS
   class Parser
     attr_accessor :string_to_parse
 
-    def initialize
-      @string_to_parse = ""
-      @parsed_objects = {}
+    def initialize(string)
+      @string_to_parse = string
     end
 
-    def self.parse_directory(string)
-      #@string_to_parse = string
-      #puts @string_to_parse
-      parsed_directory = RBFS::Directory.new
-      parsed_directory.files.merge! parse_all_objects(RBFS::File, string)
-  parsed_directory.directories.merge! parse_all_objects(RBFS::Directory, string)
-      parsed_directory
+    def parse_all
+      size = next_parameter!.to_i
+      size.times do
+        name = next_parameter!
+        serialized = next_entity!
+        yield name, serialized
+      end
     end
 
     private
 
-    def self.parse_all_objects(class_name, string)
-      # puts @string_to_parse
-      parsed_objects = {}
-      number_of_objects = next!(string).to_i
-      while number_of_objects > parsed_objects.length do
-        puts string
-        parsed_objects.merge! parse_single_object(class_name, string) end
-      parsed_objects
-    end
-
-    def self.parse_single_object(class_name, string)
-      #puts "to parse= #{string}"
-      name = next!(string)
-      length = next!(string)
-      serialized = next!(string, length)
-      #puts "name= #{name}, length= #{length} s= #{serialized}"
-      parsed = class_name.parse(serialized)
-      if string.length > 0 then parse_single_object(class_name, string) end
-      @parsed_objects.merge! {name => parsed}
-    end
-
-    def self.next! (string, *piece_length)
-      return "" if string.length == 0
-      if piece_length.length > 0
-        then string.slice! (0..piece_length[0].to_i-1)
-        else chunk, string = string.split(":", 2)
+    def next_parameter!
+        chunk, string = @string_to_parse.split(":", 2)
+        @string_to_parse = string
         chunk
-      end
+    end
+
+    def next_entity!
+        length = next_parameter!.to_i
+        str = @string_to_parse.slice! (0..length-1)
+        str
     end
   end
 
@@ -80,16 +61,16 @@ module RBFS
     private
     def self.parse_data(type, data)
       case type
-        when "string" then parsed = data
-        when "symbol" then parsed = data.to_sym
-        when "number" then parsed = parse_number(data)
-        when "nil"    then parsed = nil
-        else               parsed = 'true'
+        when "string"  then parsed = data
+        when "symbol"  then parsed = data.to_sym
+        when "number"  then parsed = parse_number(data)
+        when "nil"     then parsed = nil
+        when "boolean" then parsed = parse_boolean(data)
       end
     end
 
     def self.parse_boolean(data)
-      if data then true else false end
+      if data == "true" then true else false end
     end
 
     def self.parse_number(data)
@@ -101,9 +82,9 @@ module RBFS
     attr_accessor :directories
     attr_accessor :files
 
-    def initialize
-      @directories = {}
-      @files = {}
+    def initialize (files={}, directories={})
+      @files       = files
+      @directories = directories
     end
 
     def add_file(name, file)
@@ -123,24 +104,31 @@ module RBFS
     end
 
     def serialize
-      result = []
-      result << serialize_similar(@files)
-      result << serialize_similar(@directories)
-      result.join ""
-    end
-
-    def serialize_similar(objects_array)
-      text = []
-      text << objects_array.length.to_s + ":"
-      objects_array.each do |name, object|
-        text << [name, object.serialize.length.to_s, object.serialize].join(":")
-      end
-      text
+      files = serialize_similar(@files)
+      directories = serialize_similar(@directories)
+      "#{files}#{directories}"
     end
 
     def self.parse(string)
-      RBFS::Parser.parse_directory(string)
+      parser = Parser.new(string)
+      files = {}
+      directories = {}
+
+      parser.parse_all {|name, entity| files[name] = File.parse(entity)}
+      parser.parse_all {|name, entity| directories[name] = Directory.parse(entity)}
+      Directory.new(files, directories)
+    end
+
+    private
+
+    def serialize_similar(objects_array)
+      text = ""
+      text << "#{objects_array.length.to_s}:"
+      objects_array.each do |name, object|
+        serialized = object.serialize
+        text << "#{name}:#{serialized.length.to_s}:#{serialized}"
+      end
+      text
     end
   end
-
 end
