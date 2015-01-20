@@ -26,8 +26,8 @@ module RBFS
 
     def next_entity!
         length = next_parameter!.to_i
-        str = @string_to_parse.slice! (0..length-1)
-        str
+        chunk = @string_to_parse.slice! (0..length-1)
+        chunk
     end
   end
 
@@ -113,9 +113,10 @@ module RBFS
       parser = Parser.new(string)
       files = {}
       directories = {}
-
-      parser.parse_all {|name, entity| files[name] = File.parse(entity)}
-      parser.parse_all {|name, entity| directories[name] = Directory.parse(entity)}
+      parser.parse_all {|name, entity| files[name] = File.parse(entity) }
+      parser.parse_all do |name, entity|
+        directories[name] = Directory.parse(entity)
+      end
       Directory.new(files, directories)
     end
 
