@@ -9,8 +9,7 @@ module RBFS
 
     def parse_to_hash(class_name)
       result = {}
-      block = -> (name, entity) {result[name] = class_name.parse(entity)}
-      parse_all &block
+      parse_all {|name, entity| result[name] = class_name.parse(entity)}
       result
     end
 
