@@ -5,7 +5,6 @@ module UI
     def self.draw &block
       @screen = Screen.new
       @screen.instance_eval(&block)
-      puts "screen.group.flatten.join '' in render = #{@screen.group.flatten.join ''}"
       @screen.group.flatten.join ""
     end
 
@@ -23,8 +22,9 @@ module UI
     end
 
     def label (text, style: nil, border: nil)
-      @lbl = TextLabel.new(text)
-      add_group {@lbl}
+      label = TextLabel.new(text)
+      add_group {label}
+      pad_and_apply(border) if border
       @group
     end
 
@@ -32,7 +32,10 @@ module UI
       @partial = UI::Screen.compose &block
       @partial.map {|element| element << "\n"}
       @group << @partial
-      pad_and_apply(border) if border
+      if border then
+        @group[0] = @group[0].map{|element| element.remove_newline}
+        pad_and_apply(border)
+      end
       @group
     end
 
@@ -40,7 +43,7 @@ module UI
       @partial = UI::Screen.compose &block
       @partial.map { |element| [element] }
       @group << @partial
-      if @group[0][0].is_a? Array 
+      if @partial[0].is_a? Array 
         then @group[0] = transpose(@group[0])
       end
       pad_and_apply(border) if border
@@ -49,9 +52,8 @@ module UI
 
     def pad_and_apply(border)
       elements = @group[0]
-      elements = elements.map{|element| element.remove_newline}
       max_length = elements.max_by{|element| element.length}.length
-      block = -> (element){[border + element.pad(max_length).to_s + border + "\n"]}
+      block = -> (unit){[border + unit.pad(max_length).to_s + border + "\n"]}
       elements = elements.map &block
       @group = [elements]
       @group
@@ -61,10 +63,10 @@ module UI
 
     def transpose(array)
       new_array = []
-      (0..array.length-1).each do |index|
+      (0..array.length - 1).each do |index|
         new_array[index] = []
       end
-      (0..array.length-1).each do |sub_array_index|
+      (0..array.length - 1).each do |sub_array_index|
         array[sub_array_index].each_with_index do |element, index|
           new_array[index] << element.remove_newline
         end
@@ -108,9 +110,8 @@ module UI
       @label.length
     end
 
-    def pad(integer)
-      white_space = integer - @label.length
-      @label << " " * white_space
+    def pad(label_length)
+      @label = @label.ljust(label_length, " ")
     end
   end
 end
