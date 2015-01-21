@@ -5,8 +5,8 @@ module UI
     def self.draw &block
       @screen = Screen.new
       @screen.instance_eval(&block)
-      puts "screen.group in render = #{@screen.group.inspect}"
-      @screen.group.flatten.join
+      puts "screen.group.flatten.join '' in render = #{@screen.group.flatten.join ''}"
+      @screen.group.flatten.join ""
     end
 
   end
@@ -25,54 +25,53 @@ module UI
     def label (text, style: nil, border: nil)
       @lbl = TextLabel.new(text)
       add_group {@lbl}
-      puts "group when label = #{@group.inspect}"
       @group
     end
 
-    def vertical &block
+    def vertical(style: nil, border: nil, &block)
       @partial = UI::Screen.compose &block
-      puts "partial of vertical = #{@partial.inspect}"
-      @group << @partial.map{|element| [ element, "\n" ] }
-      puts "group after vertical = #{@group.inspect}"
+      @partial.map {|element| element << "\n"}
+      @group << @partial
+      pad_and_apply(border) if border
       @group
     end
 
-    def horizontal &block
+    def horizontal(style: nil, border: nil, &block)
       @partial = UI::Screen.compose &block
-      #@partial << "\n"
       @partial.map { |element| [element] }
       @group << @partial
-      puts "partial of horizontal = #{@partial.map { |element| [element] }}"
-      #@partial.each do |element| @group << [element] end
-      #@group << @partial.map { |element| [element] }
-      puts "group at horizontal = #{@group.inspect}"
-      @group = transpond(@group)
-      puts "group after transpond = #{@group.inspect}"
+      if @group[0][0].is_a? Array 
+        then @group[0] = transpose(@group[0])
+      end
+      pad_and_apply(border) if border
       @group
     end
 
-    def transpond(array)
-      new_array = []
-      (1..array[0].length).each do new_array << [] end
-      array.each do |sub_array|
-          (0..sub_array.length-1).each do |index|
-              new_array[index] << sub_array[index]
-            end
-        end
-      new_array
+    def pad_and_apply(border)
+      elements = @group[0]
+      elements = elements.map{|element| element.remove_newline}
+      max_length = elements.max_by{|element| element.length}.length
+      block = -> (element){[border + element.pad(max_length).to_s + border + "\n"]}
+      elements = elements.map &block
+      @group = [elements]
+      @group
     end
 
-    # def transpond(array)
-    #   new_array = []
-    #   (0..array[0].length-1).each do |sub_array|
-    #       transpond_element = []
-    #       (0..array.length-1).each do |index|
-    #           transpond_element << sub_array[index]
-    #         end
-    #       new_array << transpond_element
-    #     end
-    #   new_array
-    # end
+    private
+
+    def transpose(array)
+      new_array = []
+      (0..array.length-1).each do |index|
+        new_array[index] = []
+      end
+      (0..array.length-1).each do |sub_array_index|
+        array[sub_array_index].each_with_index do |element, index|
+          new_array[index] << element.remove_newline
+        end
+      end
+      new_array.map { |element| element << "\n" }
+      new_array
+    end
 
     def self.compose &block
       @screen = Screen.new
@@ -89,13 +88,29 @@ module UI
     end
 
     def inspect
-      @label.to_s
+      @label
+    end
+
+    def <<(string)
+      @label << string
+    end
+
+    def remove_newline
+      @label = @label.chop
+      self
     end
 
     def to_s
-      # puts @label.to_s
       @label.to_s
     end
 
+    def length
+      @label.length
+    end
+
+    def pad(integer)
+      white_space = integer - @label.length
+      @label << " " * white_space
+    end
   end
 end
